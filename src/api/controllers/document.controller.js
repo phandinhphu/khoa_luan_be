@@ -1,5 +1,7 @@
 const fs = require('fs');
-const DocumentService = require('../../services/document.service');
+const DocumentService = require('../services/document.service');
+const BorrowsService = require('../services/borrows.service');
+const { streamWithWatermark } = require('../../utils/function');
 
 const uploadDocument = async (req, res) => {
     try {
@@ -12,7 +14,7 @@ const uploadDocument = async (req, res) => {
                 fs.unlinkSync(file.path);
             }
             return res.status(400).json({ message: 'Tiêu đề là bắt buộc' });
-        }   
+        }
 
         if (!file) {
             return res.status(400).json({ message: 'Không có tệp nào được tải lên' });
@@ -39,14 +41,26 @@ const uploadDocument = async (req, res) => {
 const readPage = async (req, res) => {
     try {
         const { documentId, pageNumber } = req.params;
+        const userId = req.user._id;
+
+        const hasAccess = await BorrowsService.checkAccess(userId, documentId);
+
+        if (!hasAccess) {
+            return res.status(403).json({ message: 'Bạn không có quyền truy cập tài liệu này hoặc đã hết hạn mượn.' });
+        }
+
         const pagePath = DocumentService.getRenderedPagePath(documentId, pageNumber);
 
         if (!fs.existsSync(pagePath)) {
             return res.status(404).json({ message: 'Trang không tồn tại' });
         }
 
-        res.setHeader('Content-Type', 'image/webp');
-        res.sendFile(pagePath);
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Cache-Control', 'no-store');
+
+        const watermarkText = `${req.user._id} | ${new Date().toISOString().slice(0,10)}`;
+
+        await streamWithWatermark(pagePath, watermarkText, res);
     } catch (error) {
         res.status(500).json({ error: 'Internal Server Error' + error.message });
     }

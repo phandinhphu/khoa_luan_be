@@ -1,7 +1,7 @@
 const path = require('path');
-const { RENDERED_DIR } = require('../config/path');
-const DocumentRenderFactory = require('../render/DocumentRenderFactory');
-const Document = require('../api/models/documents.model');
+const { RENDERED_DIR } = require('../../config/path');
+const DocumentRenderFactory = require('../../render/DocumentRenderFactory');
+const Document = require('../models/documents.model');
 
 class DocumentService {
     async createDocument({ title, fileName, fileType, filePath }) {
