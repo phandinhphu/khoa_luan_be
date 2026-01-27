@@ -18,6 +18,11 @@ class DocxRenderStrategy extends DocumentRenderStrategy {
             fs.renameSync(generatedPdfPath, targetPdfPath);
         }
 
+        // Xóa file docx gốc
+        if (fs.existsSync(inputPath)) {
+            fs.unlinkSync(inputPath);
+        }
+
         const pdfStrategy = new PdfRenderStrategy();
         return pdfStrategy.prepare(docId, targetPdfPath);
     }

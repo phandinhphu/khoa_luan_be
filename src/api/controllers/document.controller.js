@@ -55,10 +55,73 @@ const readPage = async (req, res) => {
             return res.status(404).json({ message: 'Trang không tồn tại' });
         }
 
-        res.setHeader('Content-Type', 'image/png');
-        res.setHeader('Cache-Control', 'no-store');
+        const watermarkText = `${req.user._id} | ${new Date().toISOString().slice(0, 10)}`;
 
-        const watermarkText = `${req.user._id} | ${new Date().toISOString().slice(0,10)}`;
+        await streamWithWatermark(pagePath, watermarkText, res);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' + error.message });
+    }
+}
+
+const getAllDocuments = async (req, res) => {
+    try {
+        const result = await DocumentService.getAllDocuments(req.query);
+        res.status(200).json({
+            status: 'success',
+            results: result.documents.length,
+            total: result.total,
+            currentPage: result.page,
+            totalPages: Math.ceil(result.total / result.limit),
+            data: {
+                documents: result.documents
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error: ' + error.message });
+    }
+}
+
+const getDocumentById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user ? req.user._id : null;
+
+        const document = await DocumentService.getDocumentById(id);
+
+        if (!document) {
+            return res.status(404).json({ message: 'Tài liệu không tồn tại' });
+        }
+
+        const hasAccess = userId ? await BorrowsService.checkAccess(userId, id) : false;
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                document,
+                hasAccess
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error: ' + error.message });
+    }
+}
+
+const previewDocument = async (req, res) => {
+    try {
+        const { documentId } = req.params;
+        const document = await DocumentService.getDocumentById(documentId);
+
+        if (!document) {
+            return res.status(404).json({ message: 'Tài liệu không tồn tại' });
+        }
+
+        const pagePath = DocumentService.getRenderedPagePath(documentId, 1);
+
+        if (!fs.existsSync(pagePath)) {
+            return res.status(404).json({ message: 'Trang không tồn tại' });
+        }
+
+        const watermarkText = `${new Date().toISOString().slice(0, 10)}`;
 
         await streamWithWatermark(pagePath, watermarkText, res);
     } catch (error) {
@@ -69,4 +132,7 @@ const readPage = async (req, res) => {
 module.exports = {
     uploadDocument,
     readPage,
+    getAllDocuments,
+    getDocumentById,
+    previewDocument
 };

@@ -26,9 +26,10 @@ const createBorrow = async (req, res) => {
 
 const returnBorrow = async (req, res) => {
     try {
-        const { borrowId } = req.params;
+        const { documentId } = req.params;
+        const userId = req.user._id;
 
-        const returnedRecord = await borrowService.returnDocument(borrowId);
+        const returnedRecord = await borrowService.returnDocument(documentId, userId);
 
         res.status(200).json({
             message: 'Trả tài liệu thành công!',

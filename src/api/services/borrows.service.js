@@ -35,8 +35,12 @@ const borrowDocument = async (userId, documentId) => {
     return newBorrow;
 };
 
-const returnDocument = async (borrowId) => {
-    const borrow = await Borrow.findById(borrowId);
+const returnDocument = async (documentId, userId) => {
+    const borrow = await Borrow.findOne({
+        document_id: documentId,
+        user_id: userId,
+        status: 'borrowed'
+    });
 
     if (!borrow) {
         throw new Error('Record mượn không tồn tại');
@@ -44,16 +48,14 @@ const returnDocument = async (borrowId) => {
 
     borrow.return_date = new Date();
 
-    if (borrow.status !== 'borrowed') {
+    if (borrow.status === 'borrowed') {
         borrow.status = 'returned';
     }
 
     await borrow.save();
 
     return borrow;
-}
-
-    
+};
 
 const checkAccess = async (userId, documentId) => {
     const borrow = await Borrow.findOne({
@@ -81,5 +83,6 @@ const checkAccess = async (userId, documentId) => {
 
 module.exports = {
     borrowDocument,
+    returnDocument,
     checkAccess
 };

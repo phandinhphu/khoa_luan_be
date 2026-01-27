@@ -37,7 +37,7 @@ const register = async (req, res) => {
         }
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Lỗi server' });
     }
 };
 
@@ -69,7 +69,7 @@ const login = async (req, res) => {
             res.cookie('refreshToken', refreshToken, {
                 httpOnly: true,
                 secure: true,
-                sameSite: 'strict',
+                sameSite: 'None',
                 maxAge: refreshTokenExpire,
             });
 
@@ -85,7 +85,7 @@ const login = async (req, res) => {
         }
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Lỗi server' });
     }
 };
 
@@ -104,6 +104,13 @@ const logout = async (req, res) => {
             // Remove refresh token from Redis
             await redisClient.del(`refreshToken:${decoded.id}`);
         }
+
+        // Xóa cookie
+        res.clearCookie('refreshToken', {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None',
+        });
 
         res.status(200).json({ message: 'Đăng xuất thành công' });
     } catch (error) {
@@ -162,7 +169,24 @@ const refreshToken = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Lỗi server' });
+    }
+};
+
+// Get user profile
+const getProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+        }
+        res.status(200).json({
+            message: 'Lấy thông tin người dùng thành công',
+            data: user,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi server' });
     }
 };
 
@@ -171,4 +195,5 @@ module.exports = {
     login,
     logout,
     refreshToken,
+    getProfile,
 };
