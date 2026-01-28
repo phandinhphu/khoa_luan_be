@@ -6,7 +6,7 @@ const { streamWithWatermark } = require('../../utils/function');
 const uploadDocument = async (req, res) => {
     try {
         const file = req.file;
-        const { title } = req.body;
+        const { title, total_copies, copyright_status } = req.body;
 
         if (!title) {
             // Xoá tệp đã tải lên nếu có
@@ -14,6 +14,22 @@ const uploadDocument = async (req, res) => {
                 fs.unlinkSync(file.path);
             }
             return res.status(400).json({ message: 'Tiêu đề là bắt buộc' });
+        }
+
+        if (!total_copies) {
+            // Xoá tệp đã tải lên nếu có
+            if (file) {
+                fs.unlinkSync(file.path);
+            }
+            return res.status(400).json({ message: 'Số lượng bản sao là bắt buộc' });
+        }
+
+        if (!copyright_status) {
+            // Xoá tệp đã tải lên nếu có
+            if (file) {
+                fs.unlinkSync(file.path);
+            }
+            return res.status(400).json({ message: 'Tình trạng bản quyền là bắt buộc' });
         }
 
         if (!file) {
@@ -26,7 +42,9 @@ const uploadDocument = async (req, res) => {
         console.log('File path:', file.path);
 
         const result = await DocumentService.createDocument({
-            title: req.body.title,
+            title: title,
+            total_copies: total_copies,
+            copyright_status: copyright_status,
             fileName: file.filename,
             fileType: fileType,
             filePath: file.path,
