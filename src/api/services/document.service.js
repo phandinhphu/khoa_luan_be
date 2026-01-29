@@ -5,17 +5,33 @@ const Document = require('../models/documents.model');
 const APIFeatures = require('../../utils/apiFeatures');
 
 class DocumentService {
-    async createDocument({ title, fileName, fileType, filePath }) {
+    async createDocument({ title, fileName, fileType, filePath, total_copies, copyright_status }) {
         const strategy = DocumentRenderFactory.create(fileType);
 
         // Lưu thông tin document vào database và lấy docId
-        const document = await Document.create({ title, file_name: fileName, file_type: fileType, file_path: filePath });
-
+        const document = await Document.create({
+            title,
+            file_name: fileName,
+            file_type: fileType,
+            file_path: filePath,
+            total_copies,
+            copyright_status,
+        });
         const totalPages = await strategy.prepare(document._id.toString(), filePath);
 
         document.total_pages = totalPages;
         await document.save();
 
+        return document;
+    }
+
+    async updateDocument(documentId, updateData) {
+        const document = await Document.findByIdAndUpdate(documentId, updateData, { new: true });
+        return document;
+    }
+
+    async deleteDocument(documentId) {
+        const document = await Document.findByIdAndDelete(documentId);
         return document;
     }
 
@@ -38,7 +54,7 @@ class DocumentService {
             documents,
             total: totalDocuments,
             page: queryString.page * 1 || 1,
-            limit: queryString.limit * 1 || 10
+            limit: queryString.limit * 1 || 10,
         };
     }
 

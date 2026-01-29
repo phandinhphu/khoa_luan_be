@@ -3,6 +3,12 @@ const DocumentService = require('../services/document.service');
 const BorrowsService = require('../services/borrows.service');
 const { streamWithWatermark } = require('../../utils/function');
 
+/**
+ * 
+ * @desc Upload a document
+ * @route POST /api/documents/upload
+ * @access Private (Admin only)
+ */
 const uploadDocument = async (req, res) => {
     try {
         const file = req.file;
@@ -56,6 +62,63 @@ const uploadDocument = async (req, res) => {
     }
 }
 
+/**
+ * @desc Update a document
+ * @route PUT /api/documents/:id
+ * @access Private (Admin only)
+ */
+const updateDocument = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, total_copies, copyright_status } = req.body;
+
+        const updatedDocument = await DocumentService.updateDocument(id, {
+            title,
+            total_copies,
+            copyright_status
+        });
+
+        if (!updatedDocument) {
+            return res.status(404).json({ message: 'Tài liệu không tồn tại' });
+        }
+
+        res.status(200).json({ message: 'Cập nhật thành công', document: updatedDocument });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' + error.message });
+    }
+}
+
+/**
+ * @desc Delete a document
+ * @route DELETE /api/documents/:id
+ * @access Private (Admin only)
+ */
+const deleteDocument = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deletedDocument = await DocumentService.deleteDocument(id);
+
+        if (!deletedDocument) {
+            return res.status(404).json({ message: 'Tài liệu không tồn tại' });
+        }
+
+        // Xoá file khỏi hệ thống
+        if (fs.existsSync(deletedDocument.file_path)) {
+            fs.unlinkSync(deletedDocument.file_path);
+        }
+
+        res.status(200).json({ message: 'Xóa tài liệu thành công' });
+
+    } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' + error.message });
+    }
+}
+
+/**
+ * @desc Read a specific page of a document with watermark
+ * @route GET /api/documents/:documentId/pages/:pageNumber
+ * @access Private (Authenticated users with access)
+ */
 const readPage = async (req, res) => {
     try {
         const { documentId, pageNumber } = req.params;
@@ -73,7 +136,7 @@ const readPage = async (req, res) => {
             return res.status(404).json({ message: 'Trang không tồn tại' });
         }
 
-        const watermarkText = `${req.user._id} | ${new Date().toISOString().slice(0, 10)}`;
+        const watermarkText = `${req.user._id} | ${req.user.name} | ${new Date().toISOString().slice(0, 10)}`;
 
         await streamWithWatermark(pagePath, watermarkText, res);
     } catch (error) {
@@ -81,6 +144,11 @@ const readPage = async (req, res) => {
     }
 }
 
+/**
+ * @desc Get all documents with pagination and filtering
+ * @route GET /api/documents
+ * @access Public
+ */
 const getAllDocuments = async (req, res) => {
     try {
         const result = await DocumentService.getAllDocuments(req.query);
@@ -99,6 +167,11 @@ const getAllDocuments = async (req, res) => {
     }
 }
 
+/**
+ * @desc Get a document by ID with access information
+ * @route GET /api/documents/:id
+ * @access Public (Access information depends on authentication)
+ */
 const getDocumentById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -124,6 +197,11 @@ const getDocumentById = async (req, res) => {
     }
 }
 
+/**
+ * @desc Preview the first page of a document with watermark
+ * @route GET /api/documents/:documentId/preview
+ * @access Public
+ */
 const previewDocument = async (req, res) => {
     try {
         const { documentId } = req.params;
@@ -149,6 +227,8 @@ const previewDocument = async (req, res) => {
 
 module.exports = {
     uploadDocument,
+    updateDocument,
+    deleteDocument,
     readPage,
     getAllDocuments,
     getDocumentById,
