@@ -1,5 +1,6 @@
 const path = require('path');
-const { RENDERED_DIR } = require('../../config/path');
+const fs = require('fs');
+const { RENDERED_DIR, ORIGINAL_DIR } = require('../../config/path');
 const DocumentRenderFactory = require('../../render/DocumentRenderFactory');
 const Document = require('../models/documents.model');
 const APIFeatures = require('../../utils/apiFeatures');
@@ -32,6 +33,30 @@ class DocumentService {
 
     async deleteDocument(documentId) {
         const document = await Document.findByIdAndDelete(documentId);
+        
+        if (!document) {
+            return null;
+        }
+
+        // Xóa file gốc (có thể là DOCX hoặc PDF)
+        if (document.file_path && fs.existsSync(document.file_path)) {
+            fs.unlinkSync(document.file_path);
+        }
+
+        // Xóa file PDF đã chuyển đổi trong thư mục original (nếu là DOCX)
+        if (document.file_type === 'DOCX') {
+            const convertedPdfPath = path.join(ORIGINAL_DIR, `${documentId}.pdf`);
+            if (fs.existsSync(convertedPdfPath)) {
+                fs.unlinkSync(convertedPdfPath);
+            }
+        }
+
+        // Xóa thư mục rendered và tất cả các trang bên trong
+        const renderedDir = path.join(RENDERED_DIR, documentId.toString());
+        if (fs.existsSync(renderedDir)) {
+            fs.rmSync(renderedDir, { recursive: true, force: true });
+        }
+
         return document;
     }
 

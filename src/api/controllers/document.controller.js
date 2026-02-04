@@ -102,11 +102,6 @@ const deleteDocument = async (req, res) => {
             return res.status(404).json({ message: 'Tài liệu không tồn tại' });
         }
 
-        // Xoá file khỏi hệ thống
-        if (fs.existsSync(deletedDocument.file_path)) {
-            fs.unlinkSync(deletedDocument.file_path);
-        }
-
         res.status(200).json({ message: 'Xóa tài liệu thành công' });
 
     } catch (error) {
@@ -136,7 +131,8 @@ const readPage = async (req, res) => {
             return res.status(404).json({ message: 'Trang không tồn tại' });
         }
 
-        const watermarkText = `${req.user._id} | ${req.user.name} | ${new Date().toISOString().slice(0, 10)}`;
+        const clientIp = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+        const watermarkText = `${req.user._id} | ${req.user.name} | ${clientIp} | ${new Date().toISOString().slice(0, 10)}`;
 
         await streamWithWatermark(pagePath, watermarkText, res);
     } catch (error) {
