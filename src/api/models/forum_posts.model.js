@@ -18,7 +18,25 @@ const forumPostSchema = new mongoose.Schema({
     content: {
         type: String,
         required: true,
-    }
+    },
+    status: {
+        type: String,
+        enum: ['PENDING', 'APPROVED', 'REJECTED'],
+        default: 'PENDING',
+    },
+    reviewed_by: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
+    },
+    reviewed_at: {
+        type: Date,
+        default: null,
+    },
+    reject_reason: {
+        type: String,
+        default: null,
+    },
 }, {
     timestamps: {
         createdAt: 'created_at',
