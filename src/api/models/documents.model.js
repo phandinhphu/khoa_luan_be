@@ -25,6 +25,10 @@ const documentSchema = new mongoose.Schema({
         type: Number,
         default: 3,
     },
+    total_borrows: {
+        type: Number,
+        default: 0,
+    },
     copyright_status: {
         type: String,
         enum: [

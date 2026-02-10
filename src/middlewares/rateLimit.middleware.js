@@ -16,7 +16,7 @@ const loginLimiterMiddleware = (req, res, next) => {
             next();
         })
         .catch((rejRes) => {
-            res.status(429).json({ message: 'Too many login attempts, please try again after 15 minutes' });
+            res.status(429).json({ message: 'Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau 15 phút.' });
         });
 };
 
@@ -34,7 +34,7 @@ const generalLimiterMiddleware = (req, res, next) => {
             next();
         })
         .catch(() => {
-            res.status(429).json({ message: 'Too many requests, please slow down' });
+            res.status(429).json({ message: 'Quá nhiều yêu cầu, vui lòng chậm lại' });
         });
 };
 

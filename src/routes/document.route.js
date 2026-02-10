@@ -1,7 +1,17 @@
 const express = require('express');
 const multer = require('multer');
 const { ORIGINAL_DIR } = require('../config/path');
-const { uploadDocument, updateDocument, deleteDocument, readPage, getAllDocuments, getDocumentById, previewDocument } = require('../api/controllers/document.controller');
+const {
+    uploadDocument,
+    updateDocument,
+    deleteDocument,
+    readPage,
+    getAllDocuments,
+    getDocumentById,
+    previewDocument,
+    createReviewDocument,
+    getReviewsByDocumentId,
+} = require('../api/controllers/document.controller');
 const { protect, admin } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
@@ -11,8 +21,10 @@ router.post('/upload', protect, admin, upload.single('file'), uploadDocument);
 router.put('/:id', protect, admin, updateDocument);
 router.delete('/:id', protect, admin, deleteDocument);
 router.get('/', getAllDocuments);
-router.get('/:id', protect, getDocumentById);
+router.get('/:id', getDocumentById);
 router.get('/:documentId/pages/:pageNumber', protect, readPage);
 router.get('/:documentId/preview', previewDocument);
+router.post('/:documentId/reviews', protect, createReviewDocument);
+router.get('/:documentId/reviews', getReviewsByDocumentId);
 
 module.exports = router;

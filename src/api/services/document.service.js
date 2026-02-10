@@ -3,6 +3,7 @@ const fs = require('fs');
 const { RENDERED_DIR, ORIGINAL_DIR } = require('../../config/path');
 const DocumentRenderFactory = require('../../render/DocumentRenderFactory');
 const Document = require('../models/documents.model');
+const DocumentReview = require('../models/document_reviews.model');
 const APIFeatures = require('../../utils/apiFeatures');
 
 class DocumentService {
@@ -89,6 +90,53 @@ class DocumentService {
 
     getRenderedPagePath(docId, pageNumber) {
         return path.join(RENDERED_DIR, `${docId}`, `page-${pageNumber}.png`);
+    }
+
+    async createReviewDocument(userId, documentId, data) {
+        const document = await Document.findById(documentId);
+
+        if (!document) {
+            throw new Error('Document not found');
+        }
+
+        const review = await DocumentReview.create({
+            user_id: userId,
+            document_id: documentId,
+            rating: data.rating,
+            comment: data.comment || '',
+        });
+
+        return review;
+    }
+
+    async getReviewsByDocumentId(documentId, queryString) {
+        const features = new APIFeatures(
+            DocumentReview.find({ document_id: documentId }).populate('user_id', 'name email, avatar_url'),
+            queryString
+        )
+            .filter()
+            .sort()
+            .limitFields()
+            .paginate();
+
+        const reviews = await features.query;
+        const total = await DocumentReview.countDocuments({ document_id: documentId });
+
+        return {
+            reviews,
+            total,
+            page: queryString.page * 1 || 1,
+            limit: queryString.limit * 1 || 10,
+        };
+    }
+
+    async checkReviewExists(userId, documentId) {
+        const existingReview = await DocumentReview.findOne({
+            user_id: userId,
+            document_id: documentId,
+        });
+
+        return !!existingReview;
     }
 }
 

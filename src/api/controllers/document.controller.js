@@ -132,7 +132,7 @@ const readPage = async (req, res) => {
         }
 
         const clientIp = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
-        const watermarkText = `${req.user._id} | ${req.user.name} | ${clientIp} | ${new Date().toISOString().slice(0, 10)}`;
+        const watermarkText = `${req.user._id} \\ ${clientIp} \\ ${new Date().toISOString().slice(0, 10)}`;
 
         await streamWithWatermark(pagePath, watermarkText, res);
     } catch (error) {
@@ -179,13 +179,15 @@ const getDocumentById = async (req, res) => {
             return res.status(404).json({ message: 'Tài liệu không tồn tại' });
         }
 
+        const hasReview = userId ? await DocumentService.checkReviewExists(userId, id) : false;
         const hasAccess = userId ? await BorrowsService.checkAccess(userId, id) : false;
 
         res.status(200).json({
             status: 'success',
             data: {
                 document,
-                hasAccess
+                hasAccess,
+                hasReview
             }
         });
     } catch (error) {
@@ -221,6 +223,57 @@ const previewDocument = async (req, res) => {
     }
 }
 
+/**
+ * @desc Create a review for a document
+ * @route POST /api/documents/:documentId/reviews
+ * @access Private (Authenticated users)
+ */
+const createReviewDocument = async (req, res) => {
+    try {
+        const { documentId } = req.params;
+        const userId = req.user._id;
+        const { rating, comment } = req.body;
+
+        const review = await DocumentService.createReviewDocument(userId, documentId, {
+            rating,
+            comment
+        });
+
+        res.status(201).json({ message: 'Đánh giá thành công', review });
+    } catch (error) {
+        if (error.message === 'Document not found') {
+            return res.status(404).json({ message: 'Tài liệu không tồn tại' });
+        }
+
+        res.status(500).json({ error: 'Internal Server Error' + error.message });
+    }
+}
+
+/**
+ * @desc Get reviews for a document with pagination
+ * @route GET /api/documents/:documentId/reviews
+ * @access Public
+ */
+const getReviewsByDocumentId = async (req, res) => {
+    try {
+        const { documentId } = req.params;
+        const result = await DocumentService.getReviewsByDocumentId(documentId, req.query);
+
+        res.status(200).json({
+            status: 'success',
+            results: result.reviews.length,
+            total: result.total,
+            currentPage: result.page,
+            totalPages: Math.ceil(result.total / result.limit),
+            data: {
+                reviews: result.reviews
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error: ' + error.message });
+    }
+};
+
 module.exports = {
     uploadDocument,
     updateDocument,
@@ -228,5 +281,7 @@ module.exports = {
     readPage,
     getAllDocuments,
     getDocumentById,
-    previewDocument
+    previewDocument,
+    createReviewDocument,
+    getReviewsByDocumentId
 };

@@ -24,6 +24,10 @@ const borrowDocument = async (userId, documentId) => {
     const dueDate = new Date();
     dueDate.setDate(borrowDate.getDate() + 14); // 14 days loan period
 
+    // 5(Optional). Update total_borrows in Document model
+    document.total_borrows += 1;
+    await document.save();
+
     const newBorrow = await Borrow.create({
         user_id: userId,
         document_id: documentId,
